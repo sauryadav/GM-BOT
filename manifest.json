@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Meet.ai - Google Meet Assistant, Recorder & Device Tracker",
+  "version": "1.0.1",
+  "description": "AI meeting summaries, live captions translation (Hindi/English), laptop vs mobile tracker, attendance CSV, and audio recording.",
+  "permissions": [
+    "storage",
+    "tabCapture",
+    "offscreen",
+    "activeTab",
+    "tabs",
+    "sidePanel",
+    "downloads",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Meet.ai Assistant"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

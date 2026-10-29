@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meet.ai Side Panel</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <span class="logo-icon">✨</span>
+        <h1 class="logo-title">Meet.ai</h1>
+      </div>
+      <div class="header-status">
+        <span id="sessionTimer" class="timer-badge">00:00:00</span>
+        <span id="statusBadge" class="status-badge idle">IDLE</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="live">🔴 Live</button>
+      <button class="nav-tab" data-tab="attendance">👥 Attendance</button>
+      <button class="nav-tab" data-tab="assistant">🤖 AI Assistant</button>
+      <button class="nav-tab" data-tab="history">📂 History</button>
+      <button class="nav-tab" data-tab="settings">⚙️ Settings</button>
+    </nav>
+
+    <!-- Tab 1: Live Meeting Session -->
+    <section id="tab-live" class="tab-pane active">
+      <!-- Meet Info Card -->
+      <div class="card meet-meta-card">
+        <div class="card-row">
+          <span class="meta-label">Active Meet:</span>
+          <span id="activeMeetCodeText" class="meta-code">No active meeting</span>
+        </div>
+        <!-- Device & Member Tracker Grid -->
+        <div class="device-stats-grid">
+          <div class="stat-pill total">
+            <span class="stat-num" id="statTotalCount">0</span>
+            <span class="stat-label">👥 Total Members</span>
+          </div>
+          <div class="stat-pill laptop">
+            <span class="stat-num" id="statLaptopCount">0</span>
+            <span class="stat-label">💻 Laptop/PC</span>
+          </div>
+          <div class="stat-pill phone">
+            <span class="stat-num" id="statPhoneCount">0</span>
+            <span class="stat-label">📱 Phone/Dial-in</span>
+          </div>
+        </div>
+
+        <!-- Session Control Buttons -->
+        <div class="btn-group main-controls">
+          <button id="startAssistantBtn" class="btn btn-primary">▶ Start Meeting Assistant</button>
+          <button id="pauseAssistantBtn" class="btn btn-warning" disabled>⏸ Pause</button>
+          <button id="stopAssistantBtn" class="btn btn-danger" disabled>⏹ Stop & Save</button>
+        </div>
+      </div>
+
+      <!-- Live Captions & Translation Header -->
+      <div class="card translation-config-card">
+        <div class="card-header-flex">
+          <span class="section-title">🌐 Live Captions & Translation</span>
+          <label class="toggle-label">
+            <input type="checkbox" id="toggleOverlaySubtitles" checked />
+            <span>In-Meet Overlay</span>
+          </label>
+        </div>
+        <div class="lang-selector-row">
+          <label for="transLangPair">Translate:</label>
+          <select id="transLangPair" class="input-select">
+            <option value="none">Off (Original Only)</option>
+            <option value="en-hi" selected>English ➔ Hindi (हिन्दी)</option>
+            <option value="hi-en">Hindi ➔ English</option>
+            <option value="auto-en">Auto Detect ➔ English</option>
+            <option value="auto-hi">Auto Detect ➔ Hindi</option>
+          </select>
+          <button id="syncMeetBtn" class="btn btn-small" title="Re-scan Google Meet DOM for latest participants">
+            🔄 Refresh Meet
+          </button>
+        </div>
+      </div>
+
+      <!-- Caption Status & Health Banner -->
+      <div id="captionStatusBar" class="caption-status-box waiting">
+        <div class="caption-status-left">
+          <span id="captionStatusIcon" class="caption-status-icon">⚪</span>
+          <span id="captionStatusText">Checking Google Meet closed captions...</span>
+        </div>
+        <button id="enableCcBtn" class="btn btn-small btn-primary" style="display: none; padding: 3px 8px; font-size: 11px;">
+          Turn on CC
+        </button>
+      </div>
+
+      <!-- Live Transcript Stream -->
+      <div class="transcript-container">
+        <div class="transcript-header">
+          <span>Live Conversation Feed</span>
+          <span id="transcriptCount" class="badge-mini">0 lines</span>
+        </div>
+        <!-- Real-time active utterance preview banner -->
+        <div id="livePreviewBox" class="live-preview-box" style="display: none;">
+          <span class="live-preview-dot"></span>
+          <strong class="live-preview-speaker" id="livePreviewSpeaker">Speaker</strong>:
+          <span class="live-preview-text" id="livePreviewText">...</span>
+        </div>
+        <div id="liveTranscriptFeed" class="transcript-feed">
+          <div class="empty-feed-hint">
+            <p>Ready to capture speech.</p>
+            <small>Make sure Google Meet captions are on or speak into your microphone.</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Attendance Tracker -->
+    <section id="tab-attendance" class="tab-pane">
+      <div class="card">
+        <div class="card-header-flex">
+          <span class="section-title">👥 Participant Attendance</span>
+          <button id="exportCsvBtn" class="btn btn-success btn-small">📥 Export CSV</button>
+        </div>
+        <p class="section-subtext">
+          Tracks participants, detected device (Laptop vs Phone), join timestamps, and allows manual attendance toggling.
+        </p>
+
+        <!-- Device Filter Tabs -->
+        <div class="filter-chips">
+          <button class="chip active" data-filter="all">All (<span id="filterAllCount">0</span>)</button>
+          <button class="chip" data-filter="laptop">💻 Laptop (<span id="filterLaptopCount">0</span>)</button>
+          <button class="chip" data-filter="phone">📱 Phone (<span id="filterPhoneCount">0</span>)</button>
+        </div>
+
+        <!-- Participants Table -->
+        <div class="table-container">
+          <table class="attendance-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Participant</th>
+                <th>Device</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTableBody">
+              <tr>
+                <td colspan="4" class="text-center text-muted">No participants captured yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Add Manual Participant Form -->
+        <div class="manual-add-form">
+          <input type="text" id="manualNameInput" class="input-text" placeholder="Add participant name..." />
+          <select id="manualDeviceInput" class="input-select">
+            <option value="laptop">💻 Laptop</option>
+            <option value="phone">📱 Phone</option>
+          </select>
+          <button id="addManualBtn" class="btn btn-secondary btn-small">+ Add</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: AI Assistant & Minutes of Meeting -->
+    <section id="tab-assistant" class="tab-pane">
+      <div class="card">
+        <div class="card-header-flex">
+          <span class="section-title">🤖 AI Meeting Assistant</span>
+          <button id="generateAiBtn" class="btn btn-primary">✨ Generate Summary</button>
+        </div>
+        <p class="section-subtext">
+          Generates executive summary, key points, decisions, action items with deadlines, and follow-up emails.
+        </p>
+
+        <div class="lang-selector-row" style="margin-bottom: 12px;">
+          <label for="aiSummaryLang" style="font-weight: 600;">Summary Language:</label>
+          <select id="aiSummaryLang" class="input-select" style="max-width: 190px;">
+            <option value="en" selected>English</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="bilingual">Bilingual (English + Hindi)</option>
+          </select>
+        </div>
+
+        <div id="aiLoadingIndicator" class="loading-bar" style="display: none;">
+          <div class="spinner"></div>
+          <span>Analyzing transcript & generating meeting intelligence...</span>
+        </div>
+
+        <!-- AI Output Tabs / Accordion -->
+        <div class="ai-sections">
+          <!-- Executive Summary -->
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <span>📋 Executive Summary</span>
+              <button class="btn-copy" data-target="aiSummaryText">Copy</button>
+            </div>
+            <textarea id="aiSummaryText" class="ai-textarea" rows="4" placeholder="Executive summary will appear here after generation..."></textarea>
+          </div>
+
+          <!-- Key Discussion Points -->
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <span>💡 Key Discussion Points</span>
+              <button class="btn-copy" data-target="aiKeyPointsText">Copy</button>
+            </div>
+            <textarea id="aiKeyPointsText" class="ai-textarea" rows="4" placeholder="Key discussion points will appear here..."></textarea>
+          </div>
+
+          <!-- Decisions & Announcements -->
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <span>⚖️ Decisions & Announcements</span>
+              <button class="btn-copy" data-target="aiDecisionsText">Copy</button>
+            </div>
+            <textarea id="aiDecisionsText" class="ai-textarea" rows="4" placeholder="Decisions agreed upon during the meeting..."></textarea>
+          </div>
+
+          <!-- Action Items & Deadlines -->
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <span>🎯 Action Items & Deadlines</span>
+              <button class="btn-copy" data-target="aiActionItemsText">Copy</button>
+            </div>
+            <textarea id="aiActionItemsText" class="ai-textarea" rows="4" placeholder="Identified action items, assignees, and deadlines..."></textarea>
+          </div>
+
+          <!-- Follow-up Email -->
+          <div class="ai-box">
+            <div class="ai-box-header">
+              <span>✉️ Follow-Up Email Draft</span>
+              <button class="btn-copy" data-target="aiEmailText">Copy</button>
+            </div>
+            <textarea id="aiEmailText" class="ai-textarea" rows="5" placeholder="Ready-to-send follow-up email draft..."></textarea>
+          </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="export-actions-bar">
+          <button id="exportMdBtn" class="btn btn-secondary btn-small">📄 Export Markdown (.md)</button>
+          <button id="exportTxtBtn" class="btn btn-secondary btn-small">📝 Export Text (.txt)</button>
+          <button id="exportPdfBtn" class="btn btn-primary btn-small">🖨️ Print / PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Meeting History & Dashboard -->
+    <section id="tab-history" class="tab-pane">
+      <div class="card">
+        <div class="card-header-flex">
+          <span class="section-title">📂 Meeting History</span>
+          <button id="clearAllHistoryBtn" class="btn btn-danger btn-small">Clear All</button>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="historySearchInput" class="input-text" placeholder="Search by meet code, date, or text..." />
+        </div>
+        <div id="historyListContainer" class="history-list">
+          <p class="text-center text-muted">No saved meetings yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 5: Settings -->
+    <section id="tab-settings" class="tab-pane">
+      <div class="card">
+        <span class="section-title">⚙️ Extension Settings</span>
+
+        <div class="form-group">
+          <label for="settingBackendUrl">AI Backend Server URL:</label>
+          <input type="text" id="settingBackendUrl" class="input-text" value="http://localhost:3000" />
+          <small class="form-help">Points to the local secure Node backend (recommended so API keys are never exposed).</small>
+        </div>
+
+        <div class="form-group">
+          <label for="settingGeminiApiKey">Direct Gemini API Key (Optional):</label>
+          <input type="password" id="settingGeminiApiKey" class="input-text" placeholder="AIzaSy..." />
+          <small class="form-help">Stored strictly in local browser storage if you want direct Gemini calls without running the backend server.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="settingAiModel">AI Model:</label>
+          <select id="settingAiModel" class="input-select">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast & Efficient)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (In-depth analysis)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="settingRecordAudio" checked />
+            <span>Enable Meeting Audio Recording (Tab Capture)</span>
+          </label>
+        </div>
+
+        <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+        <span id="saveStatusNotice" class="save-notice" style="display: none;">Saved!</span>
+      </div>
+
+      <div class="card privacy-card">
+        <span class="section-title">🔒 Privacy & Consent</span>
+        <p class="text-muted" style="font-size: 12px; margin-top: 6px;">
+          Meet.ai stores all transcripts, attendance, and recordings <strong>locally on your device</strong> by default.
+          Audio tab capture uses standard Chrome browser APIs and displays an in-meet banner. Please always ensure meeting participants consent to recording and transcription.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script src="export-utils.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
